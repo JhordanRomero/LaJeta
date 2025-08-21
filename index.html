@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Interactivo v2: Agenda Jeta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+        }
+        .calendar-day.played {
+            background-color: #166534;
+            color: #dcfce7;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .calendar-day.played:hover {
+            background-color: #15803d;
+            transform: scale(1.05);
+        }
+        .calendar-day.not-played {
+            background-color: #991b1b;
+            color: #fee2e2;
+        }
+        .calendar-day:not(.empty):not(.played):not(.not-played) {
+             background-color: #374151;
+        }
+        .tab-button {
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .tab-active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.75);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white">Dashboard de Partidos: Agenda Jeta 🍪</h1>
+            <p class="text-lg text-gray-400 mt-2">Análisis interactivo de los partidos de Febrero a Agosto 2025</p>
+        </header>
+
+        <div class="mb-6 border-b border-gray-700">
+            <nav class="flex space-x-1 sm:space-x-2" aria-label="Tabs">
+                <button id="tab-calendario" class="tab-button tab-active flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-sm rounded-t-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Calendario
+                </button>
+                <button id="tab-estadisticas" class="tab-button flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-sm rounded-t-lg text-gray-400 hover:bg-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V16M6 22V12M18 22V8M12 12L18 8L22 4M6 12L2 8L8 4"></path></svg>
+                    Estadísticas
+                </button>
+                <button id="tab-vaquita" class="tab-button flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-sm rounded-t-lg text-gray-400 hover:bg-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    La Vaquita
+                </button>
+                 <button id="tab-tabla" class="tab-button flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 font-medium text-sm rounded-t-lg text-gray-400 hover:bg-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Tabla de Datos
+                </button>
+            </nav>
+        </div>
+
+        <main>
+            <!-- Sección Calendario -->
+            <div id="content-calendario" class="tab-content">
+                <div class="bg-gray-900 p-4 sm:p-6 rounded-lg shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="prev-month" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">‹</button>
+                        <h2 id="month-year" class="text-xl sm:text-2xl font-bold text-center"></h2>
+                        <button id="next-month" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">›</button>
+                    </div>
+                    <div id="calendar" class="grid grid-cols-7 gap-1 sm:gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Sección Estadísticas -->
+            <div id="content-estadisticas" class="tab-content hidden">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg text-center">
+                        <h3 class="font-semibold text-lg text-green-400">Jugados</h3>
+                        <p id="stat-played" class="text-3xl font-bold mt-2"></p>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg text-center">
+                        <h3 class="font-semibold text-lg text-red-400">No Jugados</h3>
+                        <p id="stat-not-played" class="text-3xl font-bold mt-2"></p>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg text-center">
+                        <h3 class="font-semibold text-lg text-gray-400">Total Fechas</h3>
+                        <p id="stat-total" class="text-3xl font-bold mt-2"></p>
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg text-indigo-400">Jugador Más Regular</h3>
+                        <div id="mas-regular" class="text-2xl font-bold mt-2"></div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg text-amber-400">Galleta Más Regular 🍪</h3>
+                        <div id="galleta-mas-regular" class="text-2xl font-bold mt-2"></div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg text-cyan-400">El Dato Duro 🧠</h3>
+                        <div id="dato-duro" class="text-lg mt-2"></div>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg text-cyan-400">Día de Juego 🗓️</h3>
+                        <div id="dato-duro-dia" class="text-lg mt-2"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6">
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg mb-4 text-indigo-400">Asistencia General</h3>
+                        <ul id="lista-asistencia" class="space-y-2 max-h-96 overflow-y-auto pr-2"></ul>
+                    </div>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-lg mb-4 text-amber-400">Asistencia Galletas 🍪</h3>
+                        <ul id="lista-galletas" class="space-y-2 max-h-96 overflow-y-auto pr-2"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección La Vaquita -->
+            <div id="content-vaquita" class="tab-content hidden">
+                <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Calculadora de La Vaquita</h2>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4 items-center">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-300">Fecha Inicio:</label>
+                            <input type="date" id="start-date" class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white p-2" value="2025-02-01">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-300">Fecha Fin:</label>
+                            <input type="date" id="end-date" class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-white p-2" value="2025-08-31">
+                        </div>
+                        <button id="calculate-debt" class="self-end bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors h-10 mt-1">Calcular</button>
+                    </div>
+                    <div id="debt-results-container" class="mt-6"></div>
+                </div>
+            </div>
+            
+            <!-- Sección Tabla de Datos -->
+            <div id="content-tabla" class="tab-content hidden">
+                <div class="bg-gray-900 p-6 rounded-lg shadow-lg">
+                     <h2 class="text-2xl font-bold mb-4">Historial Completo de Partidos</h2>
+                     <div id="data-table-container" class="max-h-[60vh] overflow-auto"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para detalles del partido -->
+    <div id="match-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-auto transform transition-all">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <h3 id="modal-title" class="text-2xl font-bold"></h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+                </div>
+                <div id="modal-body" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const matchData = [
+            { "fecha": "04-02-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Rafa, JP, Roberto, Mariano, Felipe, Diego, Benja, Oliver, Rorro, Hans" },
+            { "fecha": "07-02-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "11-02-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "14-02-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "18-02-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "6-3", "jugadores": "Benja, Jhordan, Kokan, Hanso, Cesar, Rorro, Juanca, Robert, Gonzalo, Oliver, Mariano, 🇬🇷" },
+            { "fecha": "21-02-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Nico 🧤, Oliver, Miret🍪, Roberto, Cristóbal 🍪, Nacho 🍪, Rucio🧤, Hans, Benja, Ale 🍪, JMac 🍪, Jhordan" },
+            { "fecha": "25-02-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "7-5", "jugadores": "Jhordan, Diego, Mariano, Hans, Gonzalo, Rorro, Rucio, Benja, Ale 🍪, Jmac, Robert, Felipe" },
+            { "fecha": "28-02-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "8-5", "jugadores": "Rucio 🧤, Jhordan, Montenegro, Juan 🍪, Guerra 🍪, Nacho 🍪, Cucho 🍪, Rorro, Benja, Ale 🍪, JMac 🍪, Jesús 🍪" },
+            { "fecha": "04-03-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "07-03-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Lev Chanchin, Cristo, Jhordan, Seba, Seba Palma, Nico, Ale, JMac, Jesús, 10" },
+            { "fecha": "11-03-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Oliver, Jhordan, Benja, Cristo, Nico, Hanso, Robert, Kokan, Montenegro, Diego, Cesar, 🇬🇷" },
+            { "fecha": "14-03-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Paul, Nico, Oliver, Jhordan, Montenegro, Jose 🤚🏾, Felipe, Cristo, Lu🧤, 🇬🇷, Cesar, tomas" },
+            { "fecha": "18-03-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "4-3", "jugadores": "Benja, Seba 🇦🇷, 🍪 Seba 🇦🇷, Hanso, Jhordan, Kokan, nico, Montenegro, Gonzalo, Ale 🍪, JMAC 🍪, Diego" },
+            { "fecha": "21-03-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "🍪🇦🇷 Pablo, 🍪 🇦🇷 Seba, Lu🧤, Cristo, Rucio 🧤, kokan, Benja, Oliver, Jhordan, Mauro (galleta) 🍪, Ale 💈, JMAC💈" },
+            { "fecha": "25-03-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "28-03-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "6-5", "jugadores": "Jhordan, Seba, Cristo, José 🧤, Nico, kokan, Benja, Diego, Felipe, Oliver, Cesar, Lu🧤" },
+            { "fecha": "01-04-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Benja, Nico, JP, 🇬🇷, Mariano, Ale 💈, JMac 💈, cristo, Nico 🍪, Daniel 🍪, Ender 🍪" },
+            { "fecha": "04-04-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Gonzalo, José 🧤, Rorro, Lahm, Felipe, Nico 🚚, Ale💈, kokan, JMax💈, Robert, Cesar, 🇬🇷" },
+            { "fecha": "08-04-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Benja, José 🧤, Jhordan, Hanso, Cesar, Oliver, Nico, Montenegro, Diego, Robert, Kokan, 🇬🇷" },
+            { "fecha": "11-04-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "7-4", "jugadores": "Benja, José 🧤, Jhordan, Hanso, Cesar, Oliver, Nico, Montenegro, Diego, Robert, Gonzalo, Nico M" },
+            { "fecha": "15-04-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Benja, Jhordan, Roberto, José, Juanca 🧤, Rafa 🧤, Gonzalo, Nico Montenegro, César Eduardo Adrian, Hanso, Felipe, kokan" },
+            { "fecha": "18-04-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Benja, Jhordan, Roberto, José, Juanca 🧤, Rafa 🧤, Gonzalo, Nico Montenegro, César, Hanso, Felipe, kokan" },
+            { "fecha": "22-04-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Enzo, JC 🧤, Montenegro, Hanso, Lahm, Jhordan, Cesar, Cristo, Kokan, Robert, Diego, Rafa 🧤" },
+            { "fecha": "25-04-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "6-4", "jugadores": "Seba, Jhordan, Teo, Enzo, Juanca, 🚚, Robert, Rorro, Lahm, Cristo, Felipe, Hanso" },
+            { "fecha": "29-04-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "02-05-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Seba, Jhordan, Eddie, Montenegro, 🚚, Kokan, Lahm, Jose, Cristo, Nico, Rorro, Cuyo" },
+            { "fecha": "06-05-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "09-05-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Seba, Jhordan, Eddie, Montenegro, 🚚, Kokan, Lahm, Jose, Cristo, Nico, Rorro, Cuyo" },
+            { "fecha": "13-05-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Rucio🧤, Cristo, Chepe, Kokan, Robert, Rafa 🧤, 🇬🇷, Nico, Hanso, Felipe, José" },
+            { "fecha": "16-05-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Rucio🧤, Cristo, Chepe, Kokan, Robert, Rafa 🧤, 🇬🇷, Nico, Hanso, Felipe, José" },
+            { "fecha": "20-05-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "23-05-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "6-4", "jugadores": "Seba, cristo, Gonzalo, 🚚, Porni, Robert, Mariano, Montenegro 🧤, Oliver, Jhordan, 10, Rafa 🧤" },
+            { "fecha": "27-05-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "30-05-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "03-06-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "cristo, Robert, juanca 🧤, Hans, Rafa 🧤, Oliver, chino, Enzo, Diego, Jose, R O D, 🇬🇷" },
+            { "fecha": "06-06-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Nico, Jhordan, Cristo, Korn, Kokan, tobaias, Seba, cuyo, Enzo, Robert, ROD, 🇬🇷" },
+            { "fecha": "10-06-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Robert, juanca 🧤, Hans, Rafa 🧤, Oliver, Nico, Enzo, Diego, Chepe, Jose, 🇬🇷" },
+            { "fecha": "13-06-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "17-06-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Nico, Jhordan, Cristo, Korn, Kokan, tobaias, Seba, cuyo, Enzo, Robert, ROD, 🇬🇷" },
+            { "fecha": "20-06-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "24-06-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "6-4", "jugadores": "Montenegro, Juanca🧤, José, Ken Wakashimazu 🧤, Jhordan, griego cojones, Felipe, Diego, cristo, Nico, cuyo, Paul" },
+            { "fecha": "27-06-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "01-07-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Hanso, Montenegro, Kokan, Mariano, Cristo, Diego, Juanca, Enzo 🧤, Robert, Hernán, chino, Nico" },
+            { "fecha": "04-07-2025", "dia": "Viernes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "08-07-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "11-07-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Seba, Kokan, Hanso, Diego vecino, Ale, Teo, Montenegro, J-Mac, Rorro, Cristo, Meteorto, Nico 🚚" },
+            { "fecha": "15-07-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Hanso, Rorro, Juaco 🇦🇺 🍪, Cucho 🍪, Cooper 🍪, Ale, Montenegro, Nico 🚚, Facu 🇦🇷🍪 del 🍪, Luis 🍪, J-Mac, Jesús 🍪" },
+            { "fecha": "18-07-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Rorro, Juaco 🇦🇺 🍪, Cucho 🍪, Cooper 🍪, Ale, Montenegro, Nico 🚚, Facu 🇦🇷🍪 del 🍪, Luis 🍪, J-Mac, Jesús 🍪, Hanso" },
+            { "fecha": "22-07-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jesús 🍪, José, Rorro, Mariano, Nico, Andy 🍪, Montenegro, JMac, Jesus 2 🍪, Ale, Juan 🍪, Miguel 🍪" },
+            { "fecha": "25-07-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "6-4", "jugadores": "Seba, Jhordan, Teo, Enzo, Rucio, 🚚, Robert, Rorro, Lahm, Cristo, Felipe, Hanso" },
+            { "fecha": "29-07-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Ale, jose, Cristo, Jhordan, Andy 🍪, Jesús 🍪, Miguel 🍪, Jmac, Gerar 🍪, Tomás, luis 🍪, Ángel 🍪" },
+            { "fecha": "01-08-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Cristo, tomas, Hassi 🍪, Ángel 🍪, Ender 🍪, Enderson 🍪, Ale, Jmac, Luis Manuel 🍪, Luis 🍪, Rodríguez 🍪" },
+            { "fecha": "05-08-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "5-4", "jugadores": "Jhordan, Cristo, tomas, Hassi 🍪, Ángel 🍪, Ender 🍪, Enderson 🍪, Ale, Jmac, Luis Manuel 🍪, Luis 🍪, Rodríguez 🍪" },
+            { "fecha": "08-08-2025", "dia": "Viernes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, Cristo, tomas, Hassi 🍪, Ángel 🍪, Ender 🍪, Enderson 🍪, Ale, Jmac, Luis Manuel 🍪, Luis 🍪, Rodríguez 🍪" },
+            { "fecha": "12-08-2025", "dia": "Martes", "estado": "🔴 No se jugó", "resultado": "", "jugadores": "" },
+            { "fecha": "19-08-2025", "dia": "Martes", "estado": "🟢 Se jugó", "resultado": "", "jugadores": "Jhordan, José, Miguel 🍪, Andy 🍪, Lahm, Tomás, Ender 🍪, Ale, Enderson 🍪, Gerardo 🍪, Jmac, Luis 🍪" }
+        ];
+
+        const parseDate = (dateStr) => {
+            const [day, month, year] = dateStr.split('-');
+            return new Date(year, month - 1, day);
+        };
+        
+        const tabs = document.querySelectorAll('.tab-button');
+        const contents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(item => {
+                    item.classList.remove('tab-active');
+                    item.classList.add('text-gray-400', 'hover:bg-gray-800');
+                });
+                contents.forEach(content => content.classList.add('hidden'));
+                tab.classList.add('tab-active');
+                tab.classList.remove('text-gray-400', 'hover:bg-gray-800');
+                document.getElementById(`content-${tab.id.split('-')[1]}`).classList.remove('hidden');
+            });
+        });
+
+        let currentDate = new Date(2025, 7, 1);
+
+        function renderCalendar(year, month) {
+            const calendarEl = document.getElementById('calendar');
+            calendarEl.innerHTML = `<div class="text-center font-semibold text-gray-400">Dom</div><div class="text-center font-semibold text-gray-400">Lun</div><div class="text-center font-semibold text-gray-400">Mar</div><div class="text-center font-semibold text-gray-400">Mié</div><div class="text-center font-semibold text-gray-400">Jue</div><div class="text-center font-semibold text-gray-400">Vie</div><div class="text-center font-semibold text-gray-400">Sáb</div>`;
+            document.getElementById('month-year').textContent = new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) calendarEl.insertAdjacentHTML('beforeend', '<div class="empty"></div>');
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day text-center p-2 sm:p-3 md:p-4 rounded-lg';
+                dayEl.textContent = day;
+                const dateStr = `${String(day).padStart(2, '0')}-${String(month + 1).padStart(2, '0')}-${year}`;
+                const match = matchData.find(m => m.fecha === dateStr);
+                if (match) {
+                    dayEl.dataset.date = dateStr;
+                    dayEl.classList.add(match.estado === '🟢 Se jugó' ? 'played' : 'not-played');
+                }
+                calendarEl.appendChild(dayEl);
+            }
+        }
+
+        document.getElementById('prev-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
+        document.getElementById('next-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
+        
+        const modal = document.getElementById('match-modal');
+        document.getElementById('calendar').addEventListener('click', (e) => {
+            if (e.target.classList.contains('played')) {
+                const match = matchData.find(m => m.fecha === e.target.dataset.date);
+                if (match) {
+                    document.getElementById('modal-title').textContent = `Partido del ${match.fecha}`;
+                    let bodyContent = match.resultado ? `<p class="text-lg mb-4"><strong class="font-semibold text-indigo-400">Resultado:</strong> ${match.resultado}</p>` : `<p class="text-lg mb-4"><strong class="font-semibold text-gray-400">Resultado:</strong> No informado</p>`;
+                    const players = match.jugadores.split(', ').map(p => p.trim());
+                    bodyContent += `<h4 class="font-semibold text-indigo-400 mb-2">Jugadores:</h4><ul class="list-disc list-inside grid grid-cols-2 gap-x-4 gap-y-1">${players.map(p => `<li>${p}</li>`).join('')}</ul>`;
+                    document.getElementById('modal-body').innerHTML = bodyContent;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
+        });
+        const closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        function calculateAndRenderStats() {
+            const playedGames = matchData.filter(m => m.estado === '🟢 Se jugó');
+            const notPlayedGames = matchData.filter(m => m.estado === '🔴 No se jugó');
+            
+            document.getElementById('stat-played').textContent = playedGames.length;
+            document.getElementById('stat-not-played').textContent = notPlayedGames.length;
+            document.getElementById('stat-total').textContent = matchData.length;
+
+            const playerCounts = {};
+            const galletaCounts = {};
+            playedGames.forEach(match => {
+                match.jugadores.split(', ').map(p => p.trim()).forEach(player => {
+                    if (!player) return;
+                    playerCounts[player] = (playerCounts[player] || 0) + 1;
+                    if (player.includes('🍪') || player.toLowerCase().includes('galleta')) {
+                        galletaCounts[player] = (galletaCounts[player] || 0) + 1;
+                    }
+                });
+            });
+
+            const sortedPlayers = Object.entries(playerCounts).sort((a, b) => b[1] - a[1]);
+            const sortedGalletas = Object.entries(galletaCounts).sort((a, b) => b[1] - a[1]);
+
+            document.getElementById('lista-asistencia').innerHTML = sortedPlayers.map(([name, count]) => `<li class="flex justify-between items-center bg-gray-800 p-2 rounded-md"><span>${name}</span><span class="font-bold bg-indigo-600 text-white text-xs px-2 py-1 rounded-full">${count}</span></li>`).join('');
+            document.getElementById('lista-galletas').innerHTML = sortedGalletas.map(([name, count]) => `<li class="flex justify-between items-center bg-gray-800 p-2 rounded-md"><span>${name}</span><span class="font-bold bg-amber-500 text-black text-xs px-2 py-1 rounded-full">${count}</span></li>`).join('');
+
+            if (sortedPlayers.length > 0) {
+                const [name, count] = sortedPlayers[0];
+                const percentage = ((count / playedGames.length) * 100).toFixed(0);
+                document.getElementById('mas-regular').innerHTML = `${name}
+                    <div class="text-base text-gray-400 font-medium mt-1">
+                        ${count} de ${playedGames.length} jugados <span class="font-bold text-indigo-300">(${percentage}%)</span>
+                    </div>`;
+            }
+            if (sortedGalletas.length > 0) {
+                const [name, count] = sortedGalletas[0];
+                const percentage = ((count / playedGames.length) * 100).toFixed(0);
+                document.getElementById('galleta-mas-regular').innerHTML = `${name}
+                    <div class="text-base text-gray-400 font-medium mt-1">
+                        ${count} de ${playedGames.length} jugados <span class="font-bold text-amber-300">(${percentage}%)</span>
+                    </div>`;
+            }
+            
+            const gamesWithDupla = playedGames.filter(match => match.jugadores.includes('Jhordan') && match.jugadores.toLowerCase().includes('cristo')).length;
+            const duplaPercentage = ((gamesWithDupla / playedGames.length) * 100).toFixed(0);
+            document.getElementById('dato-duro').innerHTML = `En un <span class="font-bold text-white">${duplaPercentage}%</span> de los partidos, la dupla <span class="font-semibold text-cyan-300">Jhordan-Cristo</span> estuvo presente, siendo clave para armar el equipo.`;
+            
+            const martesJugados = playedGames.filter(match => match.dia === 'Martes').length;
+            const viernesJugados = playedGames.filter(match => match.dia === 'Viernes').length;
+            let diaMasJugadoText = '';
+            if (martesJugados > viernesJugados) {
+                const porcentaje = ((martesJugados / playedGames.length) * 100).toFixed(0);
+                diaMasJugadoText = `El día preferido es el <span class="font-semibold text-cyan-300">Martes</span>, acumulando un <span class="font-bold text-white">${porcentaje}%</span> de los partidos.`;
+            } else if (viernesJugados > martesJugados) {
+                const porcentaje = ((viernesJugados / playedGames.length) * 100).toFixed(0);
+                diaMasJugadoText = `El día preferido es el <span class="font-semibold text-cyan-300">Viernes</span>, acumulando un <span class="font-bold text-white">${porcentaje}%</span> de los partidos.`;
+            } else {
+                diaMasJugadoText = `Hay un empate perfecto: se juega la misma cantidad de <span class="font-semibold text-cyan-300">Martes</span> y <span class="font-semibold text-cyan-300">Viernes</span>.`;
+            }
+            document.getElementById('dato-duro-dia').innerHTML = diaMasJugadoText;
+        }
+
+        const MATCH_COST = 3000;
+        function calculateAndRenderDebt() {
+            const startDate = new Date(document.getElementById('start-date').value + 'T00:00:00');
+            const endDate = new Date(document.getElementById('end-date').value + 'T23:59:59');
+            const playerDebts = {};
+            let totalDebt = 0;
+
+            matchData.forEach(match => {
+                const matchDate = parseDate(match.fecha);
+                if (match.estado === '🟢 Se jugó' && matchDate >= startDate && matchDate <= endDate) {
+                    match.jugadores.split(', ').map(p => p.trim()).forEach(player => {
+                        if (player) playerDebts[player] = (playerDebts[player] || 0) + 1;
+                    });
+                }
+            });
+            
+            const sortedDebts = Object.entries(playerDebts).sort((a, b) => (b[1]*MATCH_COST) - (a[1]*MATCH_COST));
+            const container = document.getElementById('debt-results-container');
+
+            if (sortedDebts.length === 0) {
+                container.innerHTML = `<div class="text-center py-8"><svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><h3 class="mt-2 text-sm font-medium text-gray-300">Todo al día</h3><p class="mt-1 text-sm text-gray-500">No hay montos pendientes en el rango seleccionado.</p></div>`;
+                return;
+            }
+
+            let tableHTML = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-700"><thead class="bg-gray-800"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Jugador</th><th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Partidos</th><th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Pendiente</th></tr></thead><tbody class="bg-gray-900 divide-y divide-gray-800">`;
+            sortedDebts.forEach(([player, games]) => {
+                const debt = games * MATCH_COST;
+                totalDebt += debt;
+                tableHTML += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${player}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">${games}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-red-400 text-right font-semibold">${debt.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })}</td></tr>`;
+            });
+            tableHTML += `</tbody><tfoot class="bg-gray-800"><tr><td colspan="2" class="px-6 py-3 text-left text-sm font-bold text-white uppercase">Total</td><td class="px-6 py-3 text-right text-sm font-bold text-white">${totalDebt.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' })}</td></tr></tfoot></table></div>`;
+            container.innerHTML = tableHTML;
+        }
+        
+        function renderDataTable() {
+            const container = document.getElementById('data-table-container');
+            let tableHTML = `<table class="min-w-full divide-y divide-gray-700"><thead class="bg-gray-800 sticky top-0"><tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">#</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Fecha</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Día</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Estado</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Resultado</th>
+                <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Nº Jugadores</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Jugadores</th>
+                </tr></thead><tbody class="bg-gray-900 divide-y divide-gray-800">`;
+            
+            matchData.forEach((match, index) => {
+                const playerCount = match.jugadores ? match.jugadores.split(',').filter(p => p.trim() !== '').length : 0;
+                tableHTML += `<tr>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-400">${index + 1}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">${match.fecha}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${match.dia}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${match.estado}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">${match.resultado || '-'}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300 text-center">${playerCount > 0 ? playerCount : '-'}</td>
+                    <td class="px-4 py-4 text-sm text-gray-300 min-w-[400px]">${match.jugadores}</td>
+                </tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            container.innerHTML = tableHTML;
+        }
+
+        document.getElementById('calculate-debt').addEventListener('click', calculateAndRenderDebt);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            calculateAndRenderStats();
+            calculateAndRenderDebt();
+            renderDataTable();
+            document.getElementById('tab-calendario').click();
+        });
+    </script>
+</body>
+</html>
